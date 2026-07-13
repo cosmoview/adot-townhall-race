@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>A.Biz 임원 달리기 · 호스트 컨트롤</title>
+<title>AI 사업본부 임원 달리기 · 호스트 컨트롤</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -69,11 +69,11 @@ const TEAMS=[
  {key:'black', name:'조현덕', title:'에이닷전화담당',    color:'#3A3A3A'},
 ];
 const QUESTIONS=[
- '신입사원 시절 가장 늦게까지 야근 했을 것 같은 임원은?',
- '회식에서 끝까지 자리를 지킬 것 같은 임원은?',
- '길에서 마주치면 커피 사주실 것 같은 임원은?',
- 'MZ 밈을 가장 잘 알아들을 것 같은 임원은?',
- '무인도에 딱 한 명 데려간다면? 생존왕 임원은?'
+ '신입사원 시절 가장 늦게까지 야근 했을 거 같은 임원은?',
+ '회식에서 끝까지 자리를 지킬거 같은 임원은?',
+ '길에서 우연히 만났는데 커피 사줄 거 같은 임원은?',
+ '갑자기 무인도에 떨어져도 살아남을 거 같은 임원은?',
+ '유튜버로 데뷔한다면 가장 성공할거 같은 임원은?'
 ];
 const T=Object.fromEntries(TEAMS.map(t=>[t.key,t]));
 const ROUND_SECONDS=20;
@@ -93,7 +93,7 @@ if(urlKey!==HOST_KEY){
 function boot(){
   root.innerHTML=`
    <div class="wrap">
-     <div class="hd"><h1>🎮 호스트 컨트롤</h1><div class="st" id="conn">A.Biz 임원 달리기</div></div>
+     <div class="hd"><h1>🎮 호스트 컨트롤</h1><div class="st" id="conn">AI 사업본부 임원 달리기</div></div>
      <div class="panel">
        <div class="row1"><span class="phase" id="ph">—</span><span class="tmr" id="tmr">--</span></div>
        <div class="qz" id="qz"></div>

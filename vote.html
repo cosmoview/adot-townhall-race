@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>A.Biz 임원 달리기 · 투표</title>
+<title>AI 사업본부 임원 달리기 · 투표</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -115,7 +115,7 @@ function render(){
   if(phase==='paused') return renderPaused(roundId);
   return renderWait();
 }
-function head(){return `<div class="brand">A.Biz 임원 달리기 🏃</div>`;}
+function head(){return `<div class="brand">AI 사업본부 임원 달리기 🏃</div>`;}
 function miniRow(){return `<div class="mini">${TEAMS.map(t=>`<i style="background:${t.color}"></i>`).join('')}</div>`;}
 
 function renderWait(){
