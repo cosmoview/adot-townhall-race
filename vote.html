@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>A.Biz 임원 달리기 · 투표</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+:root{--bg:#0f1226;--card:#1b2040;--line:#2b3160;--gold:#FFD54A}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:linear-gradient(180deg,#141834,#0d1020);color:#fff;
+ font-family:'Pretendard',-apple-system,'Malgun Gothic',sans-serif;-webkit-font-smoothing:antialiased;
+ display:flex;flex-direction:column;min-height:100dvh}
+.wrap{flex:1;display:flex;flex-direction:column;max-width:480px;margin:0 auto;width:100%;padding:18px 16px 24px}
+.brand{font-size:14px;font-weight:800;letter-spacing:.02em;color:var(--gold);text-align:center;margin-bottom:4px}
+.rtop{display:flex;justify-content:space-between;align-items:center;margin:10px 2px 6px}
+.round{font-size:13px;font-weight:800;color:#aab0e0}
+.timer{font-size:13px;font-weight:900;color:var(--gold);font-variant-numeric:tabular-nums}
+.q{font-size:22px;font-weight:900;line-height:1.32;margin:6px 2px 18px}
+.cards{display:flex;flex-direction:column;gap:11px}
+.card{display:flex;align-items:center;gap:13px;background:var(--card);border:2px solid var(--line);
+ border-radius:16px;padding:15px 16px;cursor:pointer;transition:.12s;position:relative}
+.card:active{transform:scale(.99)}
+.card.sel{border-color:var(--c);background:color-mix(in srgb,var(--c) 18%,var(--card))}
+.dot{width:22px;height:22px;border-radius:7px;background:var(--c);flex:0 0 auto;box-shadow:0 0 0 3px rgba(255,255,255,.06)}
+.who{flex:1;min-width:0}
+.nm{font-size:17px;font-weight:800;line-height:1.2}
+.ti{font-size:12.5px;color:#9aa0cc;margin-top:2px}
+.chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--line);flex:0 0 auto;display:grid;place-items:center;font-size:14px;color:#0f1226}
+.card.sel .chk{background:var(--c);border-color:var(--c)}
+.card.sel .chk::after{content:"✓";font-weight:900}
+.submit{margin-top:20px;width:100%;padding:17px;border:none;border-radius:16px;font-family:inherit;
+ font-size:18px;font-weight:900;color:#0f1226;background:var(--gold);cursor:pointer;transition:.15s;opacity:.4;pointer-events:none}
+.submit.on{opacity:1;pointer-events:auto}
+.center{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;padding:40px 10px}
+.center .big{font-size:56px}
+.center .t1{font-size:22px;font-weight:900}
+.center .t2{font-size:15px;color:#9aa0cc;line-height:1.5}
+.pill{display:inline-flex;align-items:center;gap:8px;background:var(--card);border:2px solid var(--c);
+ border-radius:999px;padding:9px 16px;font-weight:800;font-size:16px;margin-top:4px}
+.mini{display:flex;gap:7px;justify-content:center;margin-top:8px}
+.mini i{width:16px;height:16px;border-radius:5px;display:block}
+.foot{text-align:center;font-size:11px;color:#5b608c;margin-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+/* ===== Firebase ===== */
+const firebaseConfig={
+  apiKey:"AIzaSyAwqdsX9-HYr4xcniuD97dY2XIjw1dQ3fk",
+  authDomain:"adot-townhall-race.firebaseapp.com",
+  databaseURL:"https://adot-townhall-race-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"adot-townhall-race",
+  storageBucket:"adot-townhall-race.firebasestorage.app",
+  messagingSenderId:"699342448682",
+  appId:"1:699342448682:web:4336db8103ffe6e7c13b53"
+};
+firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+
+/* ===== 데이터 ===== */
+const TEAMS=[
+ {key:'green', name:'김지훈', title:'AI사업본부장',    color:'#2E9E4F'},
+ {key:'red',   name:'장성국', title:'AI서비스개발담당', color:'#D93A3A'},
+ {key:'yellow',name:'이정룡', title:'Agent개발담당',    color:'#E0A008'},
+ {key:'blue',  name:'윤현상', title:'에이닷기획담당',    color:'#2E74D0'},
+ {key:'black', name:'조현덕', title:'에이닷전화담당',    color:'#3A3A3A'},
+];
+const QUESTIONS=[
+ '신입사원 시절 가장 늦게까지 야근 했을 것 같은 임원은?',
+ '회식에서 끝까지 자리를 지킬 것 같은 임원은?',
+ '길에서 마주치면 커피 사주실 것 같은 임원은?',
+ 'MZ 밈을 가장 잘 알아들을 것 같은 임원은?',
+ '무인도에 딱 한 명 데려간다면? 생존왕 임원은?'
+];
+const T=Object.fromEntries(TEAMS.map(t=>[t.key,t]));
+
+/* ===== clientId (1인1표) ===== */
+let clientId=localStorage.getItem('clientId');
+if(!clientId){clientId='c_'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('clientId',clientId);}
+
+const app=document.getElementById('app');
+let state={phase:'idle',roundId:1,endTs:0}, selected=null, tick=null;
+const voted=rid=>localStorage.getItem('voted_'+rid)==='1';
+const votedTeam=rid=>localStorage.getItem('team_'+rid);
+
+firebase.database().ref('control/state').on('value',s=>{
+  state=s.val()||{phase:'idle',roundId:1,endTs:0}; selected=null; render();
+});
+
+/* 전체 리셋 감지 → 이 폰의 투표 잠금 전부 해제 (다시 투표 가능) */
+firebase.database().ref('control/session').on('value',s=>{
+  const sess=s.val()||0, local=+(localStorage.getItem('sessionId')||0);
+  if(sess!==local){
+    for(let i=1;i<=5;i++){localStorage.removeItem('voted_'+i);localStorage.removeItem('team_'+i);}
+    localStorage.setItem('sessionId',String(sess));
+    render();
+  }
+});
+
+function startTimer(){clearInterval(tick);tick=setInterval(()=>{const el=document.getElementById('tm');
+  if(!el){clearInterval(tick);return;}const left=Math.max(0,Math.ceil((state.endTs-Date.now())/1000));el.textContent=left+'s';},250);}
+
+function render(){
+  clearInterval(tick);
+  const {phase,roundId}=state;
+  if(phase==='open' && !voted(roundId)) return renderVote(roundId);
+  if(phase==='open' && voted(roundId)) return renderDone(roundId);
+  if(phase==='closed') return renderClosed(roundId);
+  if(phase==='finale') return renderFinale();
+  return renderWait();
+}
+function head(){return `<div class="brand">A.Biz 임원 달리기 🏃</div>`;}
+function miniRow(){return `<div class="mini">${TEAMS.map(t=>`<i style="background:${t.color}"></i>`).join('')}</div>`;}
+
+function renderWait(){
+  app.innerHTML=head()+`<div class="center">
+    <div class="big">⏳</div>
+    <div class="t1">곧 시작합니다</div>
+    <div class="t2">호스트가 라운드를 열면<br>여기서 바로 투표할 수 있어요</div>
+    ${miniRow()}
+    <div class="foot">화면을 켜둔 채 기다려 주세요</div></div>`;
+}
+function renderVote(roundId){
+  app.innerHTML=head()+`
+    <div class="rtop"><span class="round">ROUND ${roundId} / 5</span><span class="timer" id="tm">--</span></div>
+    <div class="q">${QUESTIONS[roundId-1]}</div>
+    <div class="cards">${TEAMS.map(t=>`
+      <div class="card" data-k="${t.key}" style="--c:${t.color}">
+        <span class="dot"></span>
+        <div class="who"><div class="nm">${t.name}</div><div class="ti">${t.title}</div></div>
+        <span class="chk"></span>
+      </div>`).join('')}</div>
+    <button class="submit" id="sub">투표하기</button>
+    <div class="foot">한 번 투표하면 변경할 수 없어요</div>`;
+  app.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
+    selected=c.dataset.k;
+    app.querySelectorAll('.card').forEach(x=>x.classList.toggle('sel',x===c));
+    document.getElementById('sub').classList.add('on');
+  });
+  document.getElementById('sub').onclick=()=>{if(selected)castVote(roundId,selected);};
+  startTimer();
+}
+function castVote(roundId,key){
+  db.ref(`rounds/${roundId}/votes/${clientId}`).set(key)
+    .catch(e=>alert('전송 실패, 다시 시도해주세요'));
+  localStorage.setItem('voted_'+roundId,'1');
+  localStorage.setItem('team_'+roundId,key);
+  render();
+}
+function renderDone(roundId){
+  const t=T[votedTeam(roundId)]||{name:'',color:'#888',title:''};
+  app.innerHTML=head()+`
+    <div class="rtop"><span class="round">ROUND ${roundId} / 5</span><span class="timer" id="tm">--</span></div>
+    <div class="center">
+      <div class="big">✅</div>
+      <div class="t1">투표 완료!</div>
+      <div class="pill" style="--c:${t.color}"><span class="dot" style="width:16px;height:16px"></span>${t.name} 응원</div>
+      <div class="t2">결과는 앞 대형 화면에서 확인!<br>다음 라운드를 기다려 주세요</div>
+      ${miniRow()}</div>`;
+  startTimer();
+}
+function renderClosed(roundId){
+  app.innerHTML=head()+`<div class="center">
+    <div class="big">🏁</div><div class="t1">투표 마감</div>
+    <div class="t2">이번 라운드가 종료됐어요<br>결과는 대형 화면에서!</div>${miniRow()}</div>`;
+}
+function renderFinale(){
+  app.innerHTML=head()+`<div class="center">
+    <div class="big">👑🏆</div><div class="t1">오늘의 챔피언 발표!</div>
+    <div class="t2">대형 화면에서 시즌 챔피언을<br>확인하세요. 참여 감사합니다 🎉</div>${miniRow()}</div>`;
+}
+</script>
+</body>
+</html>
