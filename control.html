@@ -76,7 +76,7 @@ const QUESTIONS=[
  '무인도에 딱 한 명 데려간다면? 생존왕 임원은?'
 ];
 const T=Object.fromEntries(TEAMS.map(t=>[t.key,t]));
-const ROUND_SECONDS=45;
+const ROUND_SECONDS=20;
 const HOST_KEY="adot2026"; // 호스트 접속 키 (?key=adot2026)
 
 /* ===== 키 게이트 ===== */
@@ -101,7 +101,7 @@ function boot(){
        <div class="troph" id="troph"></div>
      </div>
      <button class="act" id="act">—</button>
-     <div class="sub"><button id="reset">↻ 전체 리셋</button></div>
+     <div class="sub"><button id="pauseBtn" style="display:none">⏸ 일시정지</button><button id="reset">↻ 전체 리셋</button></div>
      <div class="note">라운드는 ${ROUND_SECONDS}초 후 자동 마감됩니다. 이 창은 행사 내내 열어두세요.</div>
    </div>`;
 
@@ -134,10 +134,11 @@ function boot(){
     const {phase,roundId}=state;
     const ph=document.getElementById('ph'), act=document.getElementById('act');
     ph.className='phase '+phase;
-    ph.textContent={idle:`ROUND ${roundId} · 대기`,open:`ROUND ${roundId} · 진행중`,closed:`ROUND ${roundId} · 마감`,finale:'시즌 종료'}[phase]||phase;
+    ph.textContent={idle:`ROUND ${roundId} · 대기`,open:`ROUND ${roundId} · 진행중`,paused:`ROUND ${roundId} · 일시정지`,closed:`ROUND ${roundId} · 마감`,finale:'시즌 종료'}[phase]||phase;
     document.getElementById('qz').textContent = phase==='finale' ? '' : (QUESTIONS[(roundId||1)-1]||'');
-    act.className='act';
-    if(phase==='open'){act.classList.add('stop');act.textContent='■ 지금 마감';act.onclick=()=>closeRound();}
+    act.className='act'; const pb=document.getElementById('pauseBtn'); if(pb)pb.style.display='none';
+    if(phase==='open'){act.classList.add('stop');act.textContent='■ 지금 마감';act.onclick=()=>closeRound();if(pb){pb.style.display='';pb.textContent='⏸ 일시정지';pb.onclick=()=>pauseRound();}}
+    else if(phase==='paused'){act.textContent='▶ 재개';act.onclick=()=>resumeRound();if(pb){pb.style.display='';pb.textContent='■ 지금 마감';pb.onclick=()=>closeRound();}}
     else if(phase==='closed'){
       if(roundId>=5){act.textContent='🏆 최종 결과 발표';act.onclick=()=>db.ref('control/state').update({phase:'finale'});}
       else{act.textContent=`▶ ROUND ${roundId+1} 시작`;act.onclick=()=>startRound(roundId+1);}
@@ -150,6 +151,8 @@ function boot(){
     await db.ref('rounds/'+n).remove();               // 이전 표·결과 초기화
     await db.ref('control/state').set({phase:'open',roundId:n,endTs:Date.now()+ROUND_SECONDS*1000});
   }
+  async function pauseRound(){if(state.phase!=='open')return;const remaining=Math.max(0,(state.endTs||0)-Date.now());await db.ref('control/state').update({phase:'paused',remaining});}
+  async function resumeRound(){if(state.phase!=='paused')return;await db.ref('control/state').update({phase:'open',endTs:Date.now()+(state.remaining||0)});}
   async function closeRound(){
     const rid=state.roundId;
     const resSnap=await db.ref(`rounds/${rid}/result`).get();
@@ -178,7 +181,8 @@ function boot(){
       const left=Math.max(0,Math.ceil((state.endTs-Date.now())/1000));
       el.textContent=left+'s'; el.style.color = left<=5?'#ff6b6b':'#fff';
       if(Date.now()>=state.endTs) closeRound();
-    }else{ el.textContent='--'; el.style.color='#fff'; }
+    }else if(state.phase==='paused'){ const left=Math.max(0,Math.ceil((state.remaining||0)/1000)); el.textContent='⏸ '+left+'s'; el.style.color='#FFB020'; }
+    else{ el.textContent='--'; el.style.color='#fff'; }
   },400);
 }
 </script>

@@ -70,13 +70,7 @@ const TEAMS=[
  {key:'blue',  name:'윤현상', title:'에이닷기획담당',    color:'#2E74D0'},
  {key:'black', name:'조현덕', title:'에이닷전화담당',    color:'#3A3A3A'},
 ];
-const QUESTIONS=[
- '신입사원 시절 가장 늦게까지 야근 했을 것 같은 임원은?',
- '회식에서 끝까지 자리를 지킬 것 같은 임원은?',
- '길에서 마주치면 커피 사주실 것 같은 임원은?',
- 'MZ 밈을 가장 잘 알아들을 것 같은 임원은?',
- '무인도에 딱 한 명 데려간다면? 생존왕 임원은?'
-];
+const QUESTIONS=['신입사원 시절 가장 늦게까지 야근 했을 거 같은 임원은?','회식에서 끝까지 자리를 지킬거 같은 임원은?','길에서 우연히 만났는데 커피 사줄 거 같은 임원은?','최신 밈을 바로 알 거 같은 임원은?','유튜버로 데뷔한다면 가장 성공할거 같은 임원은?'];
 const T=Object.fromEntries(TEAMS.map(t=>[t.key,t]));
 
 /* ===== clientId (1인1표) ===== */
@@ -112,6 +106,7 @@ function render(){
   if(phase==='open' && voted(roundId)) return renderDone(roundId);
   if(phase==='closed') return renderClosed(roundId);
   if(phase==='finale') return renderFinale();
+  if(phase==='paused') return renderPaused(roundId);
   return renderWait();
 }
 function head(){return `<div class="brand">A.Biz 임원 달리기 🏃</div>`;}
@@ -163,6 +158,9 @@ function renderDone(roundId){
       <div class="t2">결과는 앞 대형 화면에서 확인!<br>다음 라운드를 기다려 주세요</div>
       ${miniRow()}</div>`;
   startTimer();
+}
+function renderPaused(roundId){
+  app.innerHTML=head()+`<div class="center"><div class="big">⏸</div><div class="t1">잠시 멈춤</div><div class="t2">진행자가 잠시 멈췄어요<br>곧 다시 시작합니다</div>${miniRow()}</div>`;
 }
 function renderClosed(roundId){
   app.innerHTML=head()+`<div class="center">
