@@ -38,6 +38,9 @@ html,body{height:100%;background:#0b0a1f;overflow:hidden;color:#fff;font-family:
 .timer.paused{border-color:#FFB020}
 .timer.paused .n{color:#FFB020}
 #hostbar button.pz{background:#FFB020;color:#12102b}
+.counts{position:absolute;top:2.4cqw;right:3cqw;z-index:8;display:flex;flex-direction:column;gap:.5cqw;align-items:flex-end}
+.counts .cl{background:rgba(10,8,25,.72);border:.22cqw solid rgba(255,255,255,.14);border-radius:.8cqw;padding:.35cqw .9cqw;font-size:1.5cqw;font-weight:800;white-space:nowrap}
+.counts .cl b{color:var(--gold);font-weight:900;font-variant-numeric:tabular-nums;margin-left:.3cqw}
 @keyframes pulse{50%{transform:scale(1.09)}}
 .trophies{position:absolute;top:2.4cqw;right:3cqw;display:flex;gap:.6cqw;z-index:8;flex-wrap:wrap;justify-content:flex-end;max-width:40cqw}
 .tchip{display:flex;align-items:center;gap:.35cqw;background:rgba(10,8,25,.72);border:.22cqw solid var(--c);border-radius:.8cqw;padding:.3cqw .6cqw;font-size:1.3cqw;font-weight:800}
@@ -68,6 +71,7 @@ body.showbar #hostbar{opacity:1;pointer-events:auto;transform:translateX(-50%) t
   <div class="bg"></div>
   <div class="top"><div class="qbox"><div class="eyebrow pix" id="eyebrow">ROUND 1 / 5</div><div class="q" id="question"></div></div></div>
   <div class="timer" id="timerBox"><div class="n pix" id="timer">--</div><div class="l pix">SEC</div></div>
+  <div class="counts" id="counts"><div class="cl">👥 접속<b id="connN">0</b></div><div class="cl">🗳️ 투표<b id="voteN">0</b></div></div>
   <div class="banner" id="banner"><div class="card" id="bannerCard"></div></div>
   <div class="offline" id="offline">● 연결 끊김</div>
 </div></div>
@@ -98,6 +102,7 @@ TEAMS.forEach((t,i)=>{});
 // 상태
 let state={phase:'idle',roundId:1,endTs:0};
 let counts=TEAMS.map(()=>0), cur=TEAMS.map(()=>0), trophies={};
+let connCount=0, voteCount=0;
 let frameTimer=null,fN=0,curRound=null,votesRef=null;
 
 // 레이스 렌더 루프
@@ -113,6 +118,7 @@ function frame(){const w=stage.clientWidth,half=0.04*w;
 frame();
 function paintTags(){runners.forEach((r,i)=>r.querySelector('.v').textContent=counts[i]);}
 function paintTrophies(){TEAMS.forEach((t,i)=>{const el=document.querySelector('[data-t="'+i+'"]');if(el)el.textContent=trophies[t.key]||0;});}
+function paintCounts(){const a=document.getElementById('connN'),b=document.getElementById('voteN');if(a)a.textContent=connCount;if(b)b.textContent=voteCount;}
 function startFrames(){if(frameTimer)return;frameTimer=setInterval(()=>{fN++;TEAMS.forEach((t,i)=>{sps[i].src=t.frames[fN%t.frames.length];});},FRAME_MS);}
 function stopFrames(){clearInterval(frameTimer);frameTimer=null;TEAMS.forEach((t,i)=>sps[i].src=t.frames[0]);}
 function updateQuestion(rid){document.getElementById('eyebrow').textContent=`ROUND ${rid} / 5`;document.getElementById('question').textContent=(state.phase==='finale'?'':(QUESTIONS[rid-1]||''));}
@@ -126,10 +132,11 @@ function hookVotes(){
   curRound=state.roundId;
   votesRef=db.ref('rounds/'+curRound+'/votes');
   votesRef.on('value',s=>{const obj=s.val()||{};const c={};TEAMS.forEach(t=>c[t.key]=0);
-    Object.values(obj).forEach(k=>{if(k in c)c[k]++;});counts=TEAMS.map(t=>c[t.key]);paintTags();});
+    Object.values(obj).forEach(k=>{if(k in c)c[k]++;});counts=TEAMS.map(t=>c[t.key]);voteCount=Object.keys(obj).length;paintTags();paintCounts();});
 }
 db.ref('control/state').on('value',s=>{const prev=state;state=s.val()||{phase:'idle',roundId:1,endTs:0};onState(prev);});
 db.ref('trophies').on('value',s=>{trophies=s.val()||{};paintTrophies();});
+db.ref('presence').on('value',s=>{connCount=s.val()?Object.keys(s.val()).length:0;paintCounts();});
 // 연결 상태 표시
 db.ref('.info/connected').on('value',s=>{document.getElementById('offline').style.display=s.val()?'none':'block';});
 

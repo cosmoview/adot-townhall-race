@@ -44,6 +44,10 @@ body{background:linear-gradient(180deg,#141834,#0d1020);color:#fff;
 .mini{display:flex;gap:7px;justify-content:center;margin-top:8px}
 .mini i{width:16px;height:16px;border-radius:5px;display:block}
 .foot{text-align:center;font-size:11px;color:#5b608c;margin-top:14px}
+@keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+.dots i{font-style:normal;animation:blink 1.4s infinite}
+.dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+.guide{font-size:13px;color:#8a90bc;margin-top:8px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -76,6 +80,9 @@ const T=Object.fromEntries(TEAMS.map(t=>[t.key,t]));
 /* ===== clientId (1인1표) ===== */
 let clientId=localStorage.getItem('clientId');
 if(!clientId){clientId='c_'+Math.random().toString(36).slice(2)+Date.now().toString(36);localStorage.setItem('clientId',clientId);}
+/* 접속 표시(presence): 연결되면 등록, 끊기면 자동 제거 */
+const _pres=db.ref('presence/'+clientId);
+db.ref('.info/connected').on('value',s=>{ if(s.val()){ _pres.onDisconnect().remove(); _pres.set(true); } });
 
 const app=document.getElementById('app');
 let state={phase:'idle',roundId:1,endTs:0}, selected=null, tick=null;
@@ -114,10 +121,11 @@ function miniRow(){return `<div class="mini">${TEAMS.map(t=>`<i style="backgroun
 
 function renderWait(){
   app.innerHTML=head()+`<div class="center">
-    <div class="big">⏳</div>
-    <div class="t1">곧 시작합니다</div>
-    <div class="t2">호스트가 라운드를 열면<br>여기서 바로 투표할 수 있어요</div>
+    <div class="big">✅</div>
+    <div class="t1">참여 준비 완료!</div>
+    <div class="t2">진행자가 곧 시작합니다<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
     ${miniRow()}
+    <div class="guide">질문이 뜨면 <b>한 명</b>을 골라 투표하세요<br>총 <b>5라운드</b> 진행돼요</div>
     <div class="foot">화면을 켜둔 채 기다려 주세요</div></div>`;
 }
 function renderVote(roundId){
