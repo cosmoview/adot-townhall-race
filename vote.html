@@ -109,8 +109,7 @@ function startTimer(){clearInterval(tick);tick=setInterval(()=>{const el=documen
 function render(){
   clearInterval(tick);
   const {phase,roundId}=state;
-  if(phase==='open' && !voted(roundId)) return renderVote(roundId);
-  if(phase==='open' && voted(roundId)) return renderDone(roundId);
+  if(phase==='open') return renderVote(roundId);
   if(phase==='closed') return renderClosed(roundId);
   if(phase==='finale') return renderFinale();
   if(phase==='paused') return renderPaused(roundId);
@@ -129,6 +128,8 @@ function renderWait(){
     <div class="foot">화면을 켜둔 채 기다려 주세요</div></div>`;
 }
 function renderVote(roundId){
+  const committed=votedTeam(roundId);        // 현재 내 표(있으면)
+  selected=committed||null;
   app.innerHTML=head()+`
     <div class="rtop"><span class="round">ROUND ${roundId} / 5</span><span class="timer" id="tm">--</span></div>
     <div class="q">${QUESTIONS[roundId-1]}</div>
@@ -138,21 +139,24 @@ function renderVote(roundId){
         <div class="who"><div class="nm">${t.name}</div><div class="ti">${t.title}</div></div>
         <span class="chk"></span>
       </div>`).join('')}</div>
-    <button class="submit" id="sub">투표하기</button>
-    <div class="foot">한 번 투표하면 변경할 수 없어요</div>`;
-  app.querySelectorAll('.card').forEach(c=>c.onclick=()=>{
-    selected=c.dataset.k;
-    app.querySelectorAll('.card').forEach(x=>x.classList.toggle('sel',x===c));
-    document.getElementById('sub').classList.add('on');
-  });
-  document.getElementById('sub').onclick=()=>{if(selected)castVote(roundId,selected);};
-  startTimer();
+    <button class="submit" id="sub"></button>
+    <div class="foot" id="vfoot"></div>`;
+  const sub=document.getElementById('sub'), foot=document.getElementById('vfoot');
+  function refresh(){
+    app.querySelectorAll('.card').forEach(x=>x.classList.toggle('sel',x.dataset.k===selected));
+    if(!selected){ sub.textContent='투표하기'; sub.classList.remove('on'); }
+    else if(selected===committed){ sub.textContent='현재 선택됨 ✓'; sub.classList.remove('on'); }
+    else { sub.textContent=(committed?(T[selected].name+'(으)로 변경'):'투표하기'); sub.classList.add('on'); }
+    foot.innerHTML = committed ? '✓ 투표됨 · <b style="color:#c9cdf0">마감 전까지 변경</b> 가능' : '마감 전까지 자유롭게 바꿀 수 있어요';
+  }
+  app.querySelectorAll('.card').forEach(c=>c.onclick=()=>{ selected=c.dataset.k; refresh(); });
+  sub.onclick=()=>{ if(selected && selected!==committed) castVote(roundId,selected); };
+  refresh(); startTimer();
 }
 function castVote(roundId,key){
   db.ref(`rounds/${roundId}/votes/${clientId}`).set(key)
     .catch(e=>alert('전송 실패, 다시 시도해주세요'));
-  localStorage.setItem('voted_'+roundId,'1');
-  localStorage.setItem('team_'+roundId,key);
+  localStorage.setItem('team_'+roundId,key);   // 현재 선택 기억(강조용)
   render();
 }
 function renderDone(roundId){
