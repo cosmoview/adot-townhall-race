@@ -25,13 +25,15 @@ html,body{height:100%;background:#0b0a1f;overflow:hidden;color:#fff;font-family:
 .tag{position:absolute;top:-1.2cqh;left:50%;transform:translateX(-50%);white-space:nowrap;background:rgba(10,8,25,.82);border:.25cqw solid var(--c);border-radius:.8cqw;padding:.2cqw .7cqw;font-size:1.4cqw;font-weight:800;display:flex;align-items:center;gap:.5cqw;z-index:3}
 .tag .v{color:var(--gold);font-weight:900}
 .rankBadge{position:absolute;top:-3.4cqh;left:50%;transform:translateX(-50%);width:2.6cqw;height:2.6cqw;border-radius:50%;background:var(--gold);color:var(--ink);display:grid;place-items:center;font-size:1.4cqw;font-weight:900;box-shadow:0 .2cqw .6cqw rgba(0,0,0,.5);z-index:5}
-.top{position:absolute;top:0;left:0;right:0;padding:2.4cqw 3cqw 0;z-index:8;display:flex;justify-content:space-between;align-items:flex-start;gap:2cqw;pointer-events:none}
-.qbox{max-width:62%}
+.top{position:absolute;top:0;left:0;right:0;padding:2.4cqw 3cqw 0;z-index:8;pointer-events:none}
+.qbox{max-width:40%}
 .eyebrow{font-size:1.5cqw;color:var(--gold);text-shadow:.15cqw .15cqw 0 #000}
-.q{font-size:3cqw;font-weight:900;line-height:1.14;margin-top:.9cqw;text-shadow:.2cqw .3cqw 0 rgba(0,0,0,.55),0 0 1cqw rgba(0,0,0,.5)}
-.timer{text-align:center;flex:0 0 auto;background:rgba(10,8,25,.55);padding:1cqw 1.4cqw;border-radius:1cqw}
-.timer .n{font-size:5cqw;line-height:1;color:#fff;text-shadow:.2cqw .2cqw 0 #000}
-.timer .l{font-size:1cqw;letter-spacing:.15em;opacity:.85;margin-top:.5cqw}
+.q{font-size:2.8cqw;font-weight:900;line-height:1.16;margin-top:.9cqw;text-shadow:.2cqw .3cqw 0 rgba(0,0,0,.55),0 0 1cqw rgba(0,0,0,.5)}
+.timer{position:absolute;top:1.8cqw;left:50%;transform:translateX(-50%);z-index:9;text-align:center;background:rgba(10,8,25,.72);border:.35cqw solid rgba(255,255,255,.18);padding:.55cqw 2.6cqw;border-radius:1.6cqw;display:none}
+.timer.show{display:block}
+.timer .n{font-size:6.6cqw;line-height:1;color:#fff;text-shadow:.25cqw .25cqw 0 #000;font-variant-numeric:tabular-nums}
+.timer .l{font-size:1.2cqw;letter-spacing:.28em;opacity:.85;margin-top:0}
+.timer.warn{border-color:#ff6b6b}
 .timer.warn .n{color:#ff6b6b;animation:pulse .6s infinite}
 @keyframes pulse{50%{transform:scale(1.09)}}
 .trophies{position:absolute;top:2.4cqw;right:3cqw;display:flex;gap:.6cqw;z-index:8;flex-wrap:wrap;justify-content:flex-end;max-width:40cqw}
@@ -58,9 +60,8 @@ body.showbar #hostbar{opacity:1;pointer-events:auto;transform:translateX(-50%) t
 </style></head><body>
 <div class="wrap"><div class="stage" id="stage">
   <div class="bg"></div>
-  <div class="top"><div class="qbox"><div class="eyebrow pix" id="eyebrow">ROUND 1 / 5</div><div class="q" id="question"></div></div>
-    <div class="timer" id="timerBox"><div class="n pix" id="timer">--</div><div class="l pix">SEC</div></div></div>
-  <div class="trophies" id="trophies"></div>
+  <div class="top"><div class="qbox"><div class="eyebrow pix" id="eyebrow">ROUND 1 / 5</div><div class="q" id="question"></div></div></div>
+  <div class="timer" id="timerBox"><div class="n pix" id="timer">--</div><div class="l pix">SEC</div></div>
   <div class="banner" id="banner"><div class="card" id="bannerCard"></div></div>
   <div class="offline" id="offline">● 연결 끊김</div>
 </div></div>
@@ -78,14 +79,14 @@ const TEAMS=[{"key": "green", "name": "김지훈", "title": "AI사업본부장",
 const QUESTIONS=['신입사원 시절 가장 늦게까지 야근 했을 것 같은 임원은?','회식에서 끝까지 자리를 지킬 것 같은 임원은?','길에서 마주치면 커피 사주실 것 같은 임원은?','MZ 밈을 가장 잘 알아들을 것 같은 임원은?','무인도에 딱 한 명 데려간다면? 생존왕 임원은?'];
 const N=TEAMS.length,START=0.11,FINISH=0.82,FRAME_MS=85;
 const ROUND_SECONDS=45;
-const stage=document.getElementById('stage'),trophiesEl=document.getElementById('trophies'),banner=document.getElementById('banner'),bannerCard=document.getElementById('bannerCard');
+const stage=document.getElementById('stage'),banner=document.getElementById('banner'),bannerCard=document.getElementById('bannerCard');
 
 // 러너/트로피 DOM
 const runners=[],sps=[];
 TEAMS.forEach((t,i)=>{const r=document.createElement('div');r.className='runner';r.style.setProperty('--c',t.color);r.style.bottom=t.bottom+'%';
   r.innerHTML=`<div class="rankBadge">–</div><div class="crown">👑</div><div class="tag"><span style="width:1cqw;height:1cqw;border-radius:.2cqw;background:${t.color}"></span>${t.name} <span class="v">0</span></div><img class="sp" src="${t.frames[0]}"><div class="sh"></div>`;
   stage.appendChild(r);runners.push(r);sps.push(r.querySelector('.sp'));});
-TEAMS.forEach((t,i)=>{const c=document.createElement('div');c.className='tchip';c.style.setProperty('--c',t.color);c.innerHTML=`<span class="dot"></span>${t.name} 🏆<span class="cnt" data-t="${i}">0</span>`;trophiesEl.appendChild(c);});
+TEAMS.forEach((t,i)=>{});
 
 // 상태
 let state={phase:'idle',roundId:1,endTs:0};
@@ -190,10 +191,10 @@ window.addEventListener('keydown',e=>{
 updateHostControls();
 
 // 타이머(endTs 동기화)
-setInterval(()=>{const el=document.getElementById('timer');if(!el)return;
+setInterval(()=>{const el=document.getElementById('timer'),box=document.getElementById('timerBox');if(!el||!box)return;
   if(state.phase==='open'){const left=Math.max(0,Math.ceil((state.endTs-Date.now())/1000));el.textContent=String(left).padStart(2,'0');
-    document.getElementById('timerBox').classList.toggle('warn',left<=5);
+    box.classList.add('show');box.classList.toggle('warn',left<=5);
     if(Date.now()>=state.endTs) closeRound();}
-  else{el.textContent='--';document.getElementById('timerBox').classList.remove('warn');}
+  else{box.classList.remove('show','warn');el.textContent='--';}
 },300);
 </script></body></html>
