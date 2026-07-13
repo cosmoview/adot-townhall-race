@@ -48,9 +48,6 @@ body{background:linear-gradient(180deg,#141834,#0d1020);color:#fff;
 .dots i{font-style:normal;animation:blink 1.4s infinite}
 .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 .guide{font-size:13px;color:#8a90bc;margin-top:8px;line-height:1.5}
-.cmt{width:100%;margin-top:12px;padding:13px 14px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:#fff;font-family:inherit;font-size:15px}
-.cmt::placeholder{color:#6b719c}
-.cmt:focus{outline:none;border-color:var(--gold)}
 </style>
 </head>
 <body>
@@ -100,7 +97,7 @@ firebase.database().ref('control/state').on('value',s=>{
 firebase.database().ref('control/session').on('value',s=>{
   const sess=s.val()||0, local=+(localStorage.getItem('sessionId')||0);
   if(sess!==local){
-    for(let i=1;i<=5;i++){localStorage.removeItem('voted_'+i);localStorage.removeItem('team_'+i);localStorage.removeItem('cmt_'+i);}
+    for(let i=1;i<=5;i++){localStorage.removeItem('voted_'+i);localStorage.removeItem('team_'+i);}
     localStorage.setItem('sessionId',String(sess));
     render();
   }
@@ -132,7 +129,6 @@ function renderWait(){
 }
 function renderVote(roundId){
   const committed=votedTeam(roundId);
-  const committedCmt=localStorage.getItem('cmt_'+roundId)||'';
   selected=committed||null;
   app.innerHTML=head()+`
     <div class="rtop"><span class="round">ROUND ${roundId} / 5</span><span class="timer" id="tm">--</span></div>
@@ -143,33 +139,24 @@ function renderVote(roundId){
         <div class="who"><div class="nm">${t.name}</div><div class="ti">${t.title}</div></div>
         <span class="chk"></span>
       </div>`).join('')}</div>
-    <input class="cmt" id="cmt" maxlength="40" placeholder="이유 한 줄 (선택)">
     <button class="submit" id="sub"></button>
     <div class="foot" id="vfoot"></div>`;
-  const sub=document.getElementById('sub'), foot=document.getElementById('vfoot'), cmt=document.getElementById('cmt');
-  cmt.value=committedCmt;
-  function changed(){ return !!selected && (selected!==committed || cmt.value.trim()!==committedCmt); }
+  const sub=document.getElementById('sub'), foot=document.getElementById('vfoot');
   function refresh(){
     app.querySelectorAll('.card').forEach(x=>x.classList.toggle('sel',x.dataset.k===selected));
     if(!selected){ sub.textContent='투표하기'; sub.classList.remove('on'); }
-    else if(!changed()){ sub.textContent=committed?'현재 선택됨 ✓':'투표하기'; sub.classList.remove('on'); }
-    else { sub.textContent=committed?'변경 저장':'투표하기'; sub.classList.add('on'); }
+    else if(selected===committed){ sub.textContent='현재 선택됨 ✓'; sub.classList.remove('on'); }
+    else { sub.textContent=(committed?(T[selected].name+'(으)로 변경'):'투표하기'); sub.classList.add('on'); }
     foot.innerHTML = committed ? '✓ 투표됨 · <b style="color:#c9cdf0">마감 전까지 변경</b> 가능' : '마감 전까지 자유롭게 바꿀 수 있어요';
   }
   app.querySelectorAll('.card').forEach(c=>c.onclick=()=>{ selected=c.dataset.k; refresh(); });
-  cmt.oninput=refresh;
-  sub.onclick=()=>{ if(changed()) castVote(roundId,selected,cmt.value.trim()); };
+  sub.onclick=()=>{ if(selected && selected!==committed) castVote(roundId,selected); };
   refresh(); startTimer();
 }
-function castVote(roundId,key,comment){
-  const prevKey=votedTeam(roundId);
-  if(key!==prevKey){ db.ref(`rounds/${roundId}/votes/${clientId}`).set(key).catch(e=>alert('전송 실패, 다시 시도해주세요')); localStorage.setItem('team_'+roundId,key); }
-  const c=(comment||'').trim(), prevC=localStorage.getItem('cmt_'+roundId)||'';
-  if(c!==prevC){
-    if(c) db.ref(`rounds/${roundId}/comments/${clientId}`).update({t:c,team:key});
-    else db.ref(`rounds/${roundId}/comments/${clientId}`).remove();
-    localStorage.setItem('cmt_'+roundId,c);
-  }
+function castVote(roundId,key){
+  db.ref(`rounds/${roundId}/votes/${clientId}`).set(key)
+    .catch(e=>alert('전송 실패, 다시 시도해주세요'));
+  localStorage.setItem('team_'+roundId,key);
   render();
 }
 function renderDone(roundId){
