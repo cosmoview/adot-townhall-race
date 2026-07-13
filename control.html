@@ -33,6 +33,15 @@ body{background:linear-gradient(180deg,#141834,#0d1020);color:#fff;min-height:10
  border-radius:9px;padding:5px 9px;font-size:12px;font-weight:800}
 .tc .d{width:12px;height:12px;border-radius:3px}
 .tc .c{color:var(--gold)}
+.clabel{font-size:13px;font-weight:800;margin-bottom:10px}
+.clist{display:flex;flex-direction:column;gap:7px;max-height:300px;overflow:auto}
+.cempty{font-size:12px;color:#6b719c;padding:6px}
+.crow{display:flex;align-items:center;gap:8px;background:#12152e;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.crow.ok{border-color:#57e39a;background:rgba(87,227,154,.08)}
+.cdot{width:12px;height:12px;border-radius:3px;flex:0 0 auto}
+.ctext{flex:1;font-size:13px;line-height:1.35;word-break:break-word}
+.capprove{flex:0 0 auto;border:none;border-radius:8px;padding:6px 12px;font-family:inherit;font-weight:800;font-size:12px;cursor:pointer;background:var(--gold);color:#12102b}
+.crow.ok .capprove{background:#57e39a}
 .act{width:100%;padding:20px;border:none;border-radius:16px;font-family:inherit;font-size:20px;font-weight:900;
  color:#0f1226;background:var(--gold);cursor:pointer}
 .act.stop{background:#ff6b6b;color:#fff}
@@ -100,12 +109,13 @@ function boot(){
        <div class="tally" id="tally"></div>
        <div class="troph" id="troph"></div>
      </div>
+     <div class="panel"><div class="clabel">💬 이번 라운드 의견 <span style="font-weight:400;color:#8a90bc">(승인 시 대형화면에 노출)</span></div><div id="comments" class="clist"><div class="cempty">아직 의견이 없어요</div></div></div>
      <button class="act" id="act">—</button>
      <div class="sub"><button id="pauseBtn" style="display:none">⏸ 일시정지</button><button id="reset">↻ 전체 리셋</button></div>
      <div class="note">라운드는 ${ROUND_SECONDS}초 후 자동 마감됩니다. 이 창은 행사 내내 열어두세요.</div>
    </div>`;
 
-  let state={phase:'idle',roundId:1,endTs:0}, votes={}, trophies={}, votesRef=null, curRound=null;
+  let state={phase:'idle',roundId:1,endTs:0}, votes={}, trophies={}, comments={}, votesRef=null, commentsRef=null, curRound=null;
 
   db.ref('control/state').on('value',s=>{ state=s.val()||{phase:'idle',roundId:1,endTs:0}; hookVotes(); paint(); });
   db.ref('trophies').on('value',s=>{ trophies=s.val()||{}; paintTroph(); });
@@ -113,9 +123,21 @@ function boot(){
   function hookVotes(){
     if(curRound===state.roundId && votesRef) return;
     if(votesRef) votesRef.off();
+    if(commentsRef) commentsRef.off();
     curRound=state.roundId;
     votesRef=db.ref(`rounds/${curRound}/votes`);
     votesRef.on('value',s=>{ votes=s.val()||{}; paintTally(); });
+    commentsRef=db.ref(`rounds/${curRound}/comments`);
+    commentsRef.on('value',s=>{ comments=s.val()||{}; paintComments(); });
+  }
+  function esc(s){return String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
+  function paintComments(){
+    const el=document.getElementById('comments'); if(!el)return;
+    const ents=Object.entries(comments).filter(([k,v])=>v&&v.t);
+    if(!ents.length){ el.innerHTML='<div class="cempty">아직 의견이 없어요</div>'; return; }
+    el.innerHTML=ents.map(([id,v])=>{const col=(TEAMS.find(t=>t.key===v.team)||{}).color||'#888';
+      return `<div class="crow${v.ok?' ok':''}"><span class="cdot" style="background:${col}"></span><span class="ctext">${esc(v.t)}</span><button class="capprove" data-id="${id}">${v.ok?'✓ 노출중':'승인'}</button></div>`;}).join('');
+    el.querySelectorAll('.capprove').forEach(b=>b.onclick=()=>{const id=b.dataset.id;const cur=comments[id]&&comments[id].ok;db.ref('rounds/'+curRound+'/comments/'+id+'/ok').set(!cur);});
   }
   function tally(){const c={};TEAMS.forEach(t=>c[t.key]=0);Object.values(votes).forEach(k=>{if(k in c)c[k]++;});return c;}
   function paintTally(){
