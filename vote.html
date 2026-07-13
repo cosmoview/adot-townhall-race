@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>AI 사업본부 임원 달리기 · 투표</title>
+<title>AI 사업본부 이미지 게임 · 투표</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -48,6 +48,8 @@ body{background:linear-gradient(180deg,#141834,#0d1020);color:#fff;
 .dots i{font-style:normal;animation:blink 1.4s infinite}
 .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
 .guide{font-size:13px;color:#8a90bc;margin-top:8px;line-height:1.5}
+.leadmsg{font-size:20px;font-weight:900;color:#fff;line-height:1.5;margin:10px 6px 2px;letter-spacing:-.01em;word-break:keep-all}
+.leadmsg b{color:var(--gold)}
 </style>
 </head>
 <body>
@@ -72,7 +74,7 @@ const TEAMS=[
  {key:'red',   name:'장성국', title:'AI서비스개발담당', color:'#D93A3A'},
  {key:'yellow',name:'이정룡', title:'Agent개발담당',    color:'#E0A008'},
  {key:'blue',  name:'윤현상', title:'에이닷기획담당',    color:'#2E74D0'},
- {key:'black', name:'조현덕', title:'에이닷전화담당',    color:'#3A3A3A'},
+ {key:'purple', name:'조현덕', title:'에이닷전화담당',    color:'#A45DE8'},
 ];
 const QUESTIONS=['신입사원 시절 가장 늦게까지 야근 했을 거 같은 임원은?','회식에서 끝까지 자리를 지킬거 같은 임원은?','길에서 우연히 만났는데 커피 사줄 거 같은 임원은?','갑자기 무인도에 떨어져도 살아남을 거 같은 임원은?','유튜버로 데뷔한다면 가장 성공할거 같은 임원은?'];
 const T=Object.fromEntries(TEAMS.map(t=>[t.key,t]));
@@ -115,7 +117,7 @@ function render(){
   if(phase==='paused') return renderPaused(roundId);
   return renderWait();
 }
-function head(){return `<div class="brand">AI 사업본부 임원 달리기 🏃</div>`;}
+function head(){return `<div class="brand">AI 사업본부 이미지 게임 🎮</div>`;}
 function miniRow(){return `<div class="mini">${TEAMS.map(t=>`<i style="background:${t.color}"></i>`).join('')}</div>`;}
 
 function renderWait(){
@@ -124,7 +126,8 @@ function renderWait(){
     <div class="t1">참여 준비 완료!</div>
     <div class="t2">진행자가 곧 시작합니다<span class="dots"><i>.</i><i>.</i><i>.</i></span></div>
     ${miniRow()}
-    <div class="guide">질문이 뜨면 <b>한 명</b>을 골라 투표하세요<br>총 <b>5라운드</b> 진행돼요</div>
+    <div class="leadmsg">다음 질문을 읽고<br>가장 <b>이미지에 맞는 임원</b>에게<br>투표해주세요!</div>
+    <div class="guide">총 <b>5라운드</b> 진행돼요</div>
     <div class="foot">화면을 켜둔 채 기다려 주세요</div></div>`;
 }
 function renderVote(roundId){
